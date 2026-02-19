@@ -1,14 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createClient } from "@supabase/supabase-js"
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+import { supabase } from "@/lib/supabaseClient"
+import { useRouter } from "next/navigation"
 
 export default function Dashboard() {
+  const router = useRouter()
+
   const [stats, setStats] = useState({
     all: 0,
     open: 0,
@@ -18,47 +16,63 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function fetchData() {
-      const { data, error } = await supabase
-        .from("tickets")
-        .select("*")
+    fetchStats()
+  }, [])
 
-      if (!error && data) {
-        const all = data.length
-        const open = data.filter((t) => t.status === "open").length
-        const closed = data.filter((t) => t.status === "closed").length
+  const fetchStats = async () => {
+    const { data, error } = await supabase
+      .from("tickets")
+      .select("status")
 
-        setStats({ all, open, closed })
-      }
+    if (!error && data) {
+      const all = data.length
+      const open = data.filter(
+        (t) => t.status === "new" || t.status === "in progress"
+      ).length
+      const closed = data.filter((t) => t.status === "closed").length
 
-      setLoading(false)
+      setStats({ all, open, closed })
     }
 
-    fetchData()
-  }, [])
+    setLoading(false)
+  }
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push("/login")
+  }
 
   if (loading) {
     return <div className="p-6">Loading dashboard...</div>
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
+    <div className="p-6 space-y-6 bg-gray-100 min-h-screen">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Safety Dashboard</h1>
 
-      <div className="grid grid-cols-3 gap-4">
-        <div className="p-4 bg-white shadow rounded">
+        <button
+          onClick={handleLogout}
+          className="bg-red-500 text-white px-4 py-2 rounded"
+        >
+          Logout
+        </button>
+      </div>
+
+      <div className="grid grid-cols-3 gap-6">
+        <div className="p-6 bg-white shadow rounded">
           <h2 className="text-sm text-gray-500">All Tickets</h2>
-          <p className="text-2xl font-bold">{stats?.all ?? 0}</p>
+          <p className="text-3xl font-bold">{stats.all}</p>
         </div>
 
-        <div className="p-4 bg-white shadow rounded">
-          <h2 className="text-sm text-gray-500">Open Tickets</h2>
-          <p className="text-2xl font-bold">{stats?.open ?? 0}</p>
+        <div className="p-6 bg-white shadow rounded">
+          <h2 className="text-sm text-gray-500">Open / In Progress</h2>
+          <p className="text-3xl font-bold">{stats.open}</p>
         </div>
 
-        <div className="p-4 bg-white shadow rounded">
-          <h2 className="text-sm text-gray-500">Closed Tickets</h2>
-          <p className="text-2xl font-bold">{stats?.closed ?? 0}</p>
+        <div className="p-6 bg-white shadow rounded">
+          <h2 className="text-sm text-gray-500">Closed</h2>
+          <p className="text-3xl font-bold">{stats.closed}</p>
         </div>
       </div>
     </div>
