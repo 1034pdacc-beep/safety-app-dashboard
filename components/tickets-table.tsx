@@ -22,9 +22,7 @@ export default function TicketsTable() {
 
     let query = supabase
       .from("tickets")
-      .select(
-        "id, ticket_number, status, created_at, reporter_id"
-      )
+      .select("id, ticket_number, status, created_at, reporter_id")
       .order("created_at", { ascending: false })
 
     if (myOnly && user) {
@@ -40,6 +38,22 @@ export default function TicketsTable() {
     setLoading(false)
   }
 
+  const exportCSV = () => {
+    const rows = tickets.map(
+      (t) => `${t.ticket_number},${t.status},${t.created_at}`
+    )
+
+    const csv = "Ticket,Status,Created\n" + rows.join("\n")
+
+    const blob = new Blob([csv], { type: "text/csv" })
+    const url = window.URL.createObjectURL(blob)
+
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "tickets.csv"
+    a.click()
+  }
+
   if (loading) return <div>Loading tickets...</div>
 
   return (
@@ -47,12 +61,21 @@ export default function TicketsTable() {
       <div className="flex justify-between mb-4">
         <h2 className="text-xl font-bold">Ticket Tracking</h2>
 
-        <button
-          onClick={() => setMyOnly(!myOnly)}
-          className="bg-gray-200 px-3 py-1 rounded"
-        >
-          {myOnly ? "Show All" : "My Tickets"}
-        </button>
+        <div className="space-x-2">
+          <button
+            onClick={() => setMyOnly(!myOnly)}
+            className="bg-gray-200 px-3 py-1 rounded"
+          >
+            {myOnly ? "Show All" : "My Tickets"}
+          </button>
+
+          <button
+            onClick={exportCSV}
+            className="bg-green-600 text-white px-3 py-1 rounded"
+          >
+            Export CSV
+          </button>
+        </div>
       </div>
 
       <table className="w-full border">
