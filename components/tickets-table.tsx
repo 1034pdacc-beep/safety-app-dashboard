@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
 
 export function TicketsTable() {
@@ -19,7 +19,9 @@ export function TicketsTable() {
       `)
       .order("created_at", { ascending: false })
 
-    if (!error) setTickets(data || [])
+    if (!error) {
+      setTickets(data || [])
+    }
   }
 
   useEffect(() => {
@@ -27,25 +29,27 @@ export function TicketsTable() {
   }, [])
 
   return (
-    <table className="table-auto border">
+    <table className="min-w-full border">
       <thead>
-        <tr>
-          <th>Ticket #</th>
-          <th>Category</th>
-          <th>Cell</th>
-          <th>Status</th>
-          <th>Created</th>
+        <tr className="bg-gray-200">
+          <th className="border p-2">Ticket #</th>
+          <th className="border p-2">Category</th>
+          <th className="border p-2">Cell</th>
+          <th className="border p-2">Status</th>
+          <th className="border p-2">Created</th>
         </tr>
       </thead>
 
       <tbody>
         {tickets.map((t) => (
           <tr key={t.id}>
-            <td>{t.ticket_number}</td>
-            <td>{t.categories?.name}</td>
-            <td>{t.cells?.name}</td>
-            <td>{t.status}</td>
-            <td>{new Date(t.created_at).toLocaleString()}</td>
+            <td className="border p-2">{t.ticket_number}</td>
+            <td className="border p-2">{t.categories?.name}</td>
+            <td className="border p-2">{t.cells?.name}</td>
+            <td className="border p-2">{t.status}</td>
+            <td className="border p-2">
+              {new Date(t.created_at).toLocaleString()}
+            </td>
           </tr>
         ))}
       </tbody>
