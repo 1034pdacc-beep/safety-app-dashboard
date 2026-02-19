@@ -5,23 +5,38 @@ import { AppSidebar } from "./app-sidebar"
 import { RaiseTicketForm } from "./raise-ticket-form"
 import { TicketsTable } from "./tickets-table"
 
-export function Dashboard() {
-  const [view, setView] = useState<"all" | "raise">("all")
+type ViewType = "all" | "raise"
 
-  const switchView = (v: "all" | "raise") => {
-    setView(v)
+export function Dashboard() {
+  const [view, setView] = useState<ViewType>("all")
+
+  const handleNavigation = (selected: string) => {
+    if (selected === "Raise Ticket") {
+      setView("raise")
+    } else if (selected === "All Tickets") {
+      setView("all")
+    }
   }
 
   return (
-    <>
-      <AppSidebar onSelect={(v) => switchView(v)} />
+    <div className="flex min-h-screen">
+      <AppSidebar onSelect={handleNavigation} />
 
-      <div className="p-6">
+      <main className="flex-1 p-6">
         {view === "raise" && (
-          <RaiseTicketForm onSubmitted={() => switchView("all")} />
+          <div>
+            <h2 className="text-2xl font-bold mb-4">Raise New Ticket</h2>
+            <RaiseTicketForm onSubmitted={() => setView("all")} />
+          </div>
         )}
-        {view === "all" && <TicketsTable />}
-      </div>
-    </>
+
+        {view === "all" && (
+          <div>
+            <h2 className="text-2xl font-bold mb-4">All Tickets</h2>
+            <TicketsTable />
+          </div>
+        )}
+      </main>
+    </div>
   )
 }
