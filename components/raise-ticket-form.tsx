@@ -1,70 +1,78 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
+import { useRouter } from "next/navigation"
 
-interface RaiseTicketFormProps {
-  onSubmitted: () => void
-}
+export default function RaiseTicketForm() {
+  const router = useRouter()
 
-export function RaiseTicketForm({ onSubmitted }: RaiseTicketFormProps) {
   const [categories, setCategories] = useState<any[]>([])
   const [cells, setCells] = useState<any[]>([])
+  const [users, setUsers] = useState<any[]>([])
 
-  const [categoryId, setCategoryId] = useState("")
-  const [cellId, setCellId] = useState("")
-  const [description, setDescription] = useState("")
-  const [actionRequired, setActionRequired] = useState("")
+  const [form, setForm] = useState({
+    category_id: "",
+    cell_id: "",
+    description: "",
+    action_required: "",
+    assignee_id: "",
+  })
 
   useEffect(() => {
     fetchDropdowns()
   }, [])
 
   const fetchDropdowns = async () => {
-    const { data: catData } = await supabase.from("categories").select("*")
-    const { data: cellData } = await supabase.from("cells").select("*")
+    const { data: cat } = await supabase.from("categories").select("*")
+    const { data: cell } = await supabase.from("cells").select("*")
+    const { data: user } = await supabase.from("user_roles").select("user_id")
 
-    setCategories(catData || [])
-    setCells(cellData || [])
+    setCategories(cat || [])
+    setCells(cell || [])
+    setUsers(user || [])
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault()
 
-    const { data: userData } = await supabase.auth.getUser()
-    if (!userData.user) {
-      alert("Please login first")
-      return
-    }
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
-    const { error } = await supabase.from("tickets").insert({
-      category_id: categoryId,
-      cell_id: cellId,
-      description,
-      action_required: actionRequired,
-      reporter_id: userData.user.id,
-    })
+    if (!user) return alert("Not logged in")
+
+    const { data, error } = await supabase.from("tickets").insert([
+      {
+        category_id: form.category_id,
+        cell_id: form.cell_id,
+        description: form.description,
+        action_required: form.action_required,
+        reporter_id: user.id,
+        assignee_id: form.assignee_id || null,
+      },
+    ])
 
     if (error) {
       alert(error.message)
     } else {
-      alert("Ticket created successfully!")
-      setDescription("")
-      setActionRequired("")
-      onSubmitted()
+      alert("Ticket Created Successfully")
+      router.push("/dashboard")
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="p-6 max-w-xl mx-auto bg-white shadow rounded">
+      <h2 className="text-xl font-bold mb-4">Raise Ticket</h2>
 
-      <div>
-        <label>Category</label>
+      <form onSubmit={handleSubmit} className="space-y-4">
+
         <select
-          className="border p-2 w-full"
-          value={categoryId}
-          onChange={(e) => setCategoryId(e.target.value)}
+          className="w-full border p-2"
           required
+          onChange={(e) =>
+            setForm({ ...form, category_id: e.target.value })
+          }
         >
           <option value="">Select Category</option>
           {categories.map((c) => (
@@ -73,15 +81,13 @@ export function RaiseTicketForm({ onSubmitted }: RaiseTicketFormProps) {
             </option>
           ))}
         </select>
-      </div>
 
-      <div>
-        <label>Cell</label>
         <select
-          className="border p-2 w-full"
-          value={cellId}
-          onChange={(e) => setCellId(e.target.value)}
+          className="w-full border p-2"
           required
+          onChange={(e) =>
+            setForm({ ...form, cell_id: e.target.value })
+          }
         >
           <option value="">Select Cell</option>
           {cells.map((c) => (
@@ -90,30 +96,43 @@ export function RaiseTicketForm({ onSubmitted }: RaiseTicketFormProps) {
             </option>
           ))}
         </select>
-      </div>
 
-      <div>
-        <label>Description</label>
         <textarea
-          className="border p-2 w-full"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Description"
+          className="w-full border p-2"
           required
+          onChange={(e) =>
+            setForm({ ...form, description: e.target.value })
+          }
         />
-      </div>
 
-      <div>
-        <label>Action Required</label>
         <textarea
-          className="border p-2 w-full"
-          value={actionRequired}
-          onChange={(e) => setActionRequired(e.target.value)}
+          placeholder="Action Required"
+          className="w-full border p-2"
+          required
+          onChange={(e) =>
+            setForm({ ...form, action_required: e.target.value })
+          }
         />
-      </div>
 
-      <button className="bg-blue-600 text-white px-4 py-2 rounded">
-        Submit Ticket
-      </button>
-    </form>
+        <select
+          className="w-full border p-2"
+          onChange={(e) =>
+            setForm({ ...form, assignee_id: e.target.value })
+          }
+        >
+          <option value="">Assign To (Optional)</option>
+          {users.map((u) => (
+            <option key={u.user_id} value={u.user_id}>
+              {u.user_id}
+            </option>
+          ))}
+        </select>
+
+        <button className="bg-blue-600 text-white px-4 py-2 rounded w-full">
+          Submit Ticket
+        </button>
+      </form>
+    </div>
   )
 }
